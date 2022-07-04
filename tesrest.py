@@ -30,7 +30,11 @@ xmlpost = """\
 <?xml version="1.0" encoding="UTF-8" ?>\
 <entry xmlns="http://purl.org/atom/ns#">
 	<object.function>
-		<queryCondition>#queryCondition</queryCondition>
+		<queryCondition>
+        <![CDATA[
+#queryCondition
+]]>
+</queryCondition>
 		<selectColumns>#selectColumns</selectColumns>
         <numRows>0</numRows>
 	</object.function>
@@ -224,12 +228,36 @@ class TESREST:
                 nodeList.append(xml2obj.xml2obj(ET.tostring(node)))
         return nodeList
 
+    def deleteTes(self,objectname, criteria, logger=None):
+        newxml = xmlupd.replace('object', objectname).replace('function', 'delete').replace('#obj', criteria).replace('\n','').replace('\t','')
+        data = {'data':{newxml}}
+        headers={}
+        self.req = requests.Request('POST',self.url + '/post',  data=data,headers=headers, auth=self.auth)
+        prepped = self.s.prepare_request(self.req)
+        start_time = datetime.datetime.now()
+        self.resp = self.s.send(prepped,verify=False)
+        elapsed = datetime.datetime.now() - start_time
+        mes = "Elapsed time %d " % elapsed.seconds
+        root = ET.fromstring(self.resp.text.encode('utf-8'))
+        objlist = []
+        tesobjlist = []
+        ET.register_namespace('', 'http://www.tidalsoftware.com/client/tesservlet')
+        for entry in root.iter('{http://www.tidalsoftware.com/client/tesservlet}' + objectname.lower()):
+            xml = ET.tostring(entry)
+            obji = xml2obj.xml2obj(xml,objectname)
+            if len(obji._attrs) > 1:
+                obji._attrs['TESObject'] = objectname
+                objlist.append(obji)
+        if len(tesobjlist) > 0:
+            return (tesobjlist, mes + ':' + newxml)
+        return (objlist, mes + ':' + newxml)
+
 
     def getTESList(self,objectname, criteria, columns=None, logger=None):
         if self.req is None:
             raise Exception('Not </tes:  + keto TES')
         from http.client import HTTPConnection  # py3
-        
+        #print(criteria)
         #HTTPConnection.debuglevel = 2            
         newxml = xmlpost.replace('object', objectname).replace('function', 'getList').replace('#queryCondition', criteria).replace('#selectColumns', columns if columns != None else '').replace('\n','').replace('\t','')
         #print(newxml)
@@ -375,9 +403,14 @@ class TESREST:
         tname=  name.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=')
         results = self.getTESList("Job",f"job.name = '{tname}'",None,logging)    
         return results[0]
+    def replaceChars(self,name):
+        _strs = '\\,*?()\'!=<>'
+        for x in _strs:
+            name = name.replace(x,"\\" + x)
+        return name
+        #return name.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=').replace("'","\\'").replace("<","\\<").replace(">","\\>")
 
     def getJob(self,name,parent, cached=True):
-        specchar=r'*?(),\'!=<>'
         '''
         r'*?(),\'!=<>'
         '''        
@@ -393,9 +426,9 @@ class TESREST:
             except Exception as ex:
                 pass
         
-        parent = parent.replace('\\','\\\\') 
-        tname=  name.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=').replace('&','\\&')            
-        tparent= parent.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=').replace('&','\\&')
+        #parent = parent.replace('\\','\\\\') 
+        tname=    self.replaceChars(name)   #.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=').replace("'","\\'").replace("<","\\<").replace(">","\\>")            
+        tparent= self.replaceChars(parent)                     #.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=').replace("'","\\'").replace("<","\\<").replace(">","\\>")
             #if cfg.API_VERSION=='6.3':
             #    tparent = '\\' + tparent.strip('\\') 
         if tname == None or tname == '':
@@ -449,15 +482,23 @@ class TESREST:
     def getRuntimeUser(self,rtu):
             if rtu.find('\\')> -1:
                 domain , name = rtu.split('\\')
-                to_r = self.getTESList("Users", f"name='{name}' and domain='{domain}'")    
+                to_r = self.getTESList("Users", f"upper(name)='{name.upper()}' and upper(domain)='{domain.upper()}'")    
             else:
-                to_r = self.getTESList("Users", f"name='{rtu}' and domain is null")
+                to_r = self.getTESList("Users", f"upper(name)='{rtu.upper()}' and domain is null")
             if len(to_r[0]) == 1:
                 objectdict[f"Users_{rtu}"] = to_r[0][0]['id']
                 return  to_r[0][0]['id']
             else:
-                #logging.error(f'Runtime user not found {rtu}')
-                return -1
+                if rtu.find('\\')> -1:
+                    domain , name = rtu.split('\\')
+                    to_r = self.getTESList("Users", f"upper(name)='{name.upper()}' and upper(domain)='{domain.upper()}'")    
+                else:
+                    to_r = self.getTESList("Users", f"upper(name)='{rtu.upper()}' and domain is null")
+                if len(to_r[0]) == 1:
+                    objectdict[f"Users_{rtu}"] = to_r[0][0]['id']
+                    return  to_r[0][0]['id']
+                else:
+                    return -1
 
     def getAgentid(self,name):
         r1 = self.getTESList("Node", f"upper(name)='{name.upper()}'")
