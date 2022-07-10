@@ -3,10 +3,8 @@ from logging import exception
 import re
 import xml.sax.handler
 import json
-pv = None
 
 str = str
-pv = 3
 unicode = str
 bytes = bytes
 basestring = (str,bytes)
@@ -144,11 +142,7 @@ def xml2obj(src,objname):
         xml.sax.parseString(src, builder)
     else:
         xml.sax.parse(src, builder)
-    if pv == 3:
-        if objname.lower() in builder.root._attrs:
-            return builder.root._attrs[str(objname.lower())]
-        else:
-            return builder.root._attrs[str(objname)]
+    if objname.lower() in builder.root._attrs:
+        return builder.root._attrs[str(objname.lower())]
     else:
-    # 'unicode' is undefined, must be Python 3
-        return builder.root._attrs.values()[0]
+        return builder.root._attrs[str(objname)]

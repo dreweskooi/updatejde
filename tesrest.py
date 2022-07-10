@@ -172,6 +172,7 @@ class TESREST:
             self.password = password
         else:
             self.password = base64.b85decode(password).decode('utf-8')
+            print(self.password)
         self.auth = HTTPBasicAuth(self.user, self.password)
         self.s = requests.Session()
         self.req = requests.Request('GET', self.url, auth=self.auth)
@@ -258,7 +259,8 @@ class TESREST:
             raise Exception('Not </tes:  + keto TES')
         from http.client import HTTPConnection  # py3
         #print(criteria)
-        #HTTPConnection.debuglevel = 2            
+        #HTTPConnection.debuglevel = 2 
+        #           
         newxml = xmlpost.replace('object', objectname).replace('function', 'getList').replace('#queryCondition', criteria).replace('#selectColumns', columns if columns != None else '').replace('\n','').replace('\t','')
         #print(newxml)
         #newxml = """<?xml version="1.0" encoding="UTF-8" ?><entry xmlns="http://purl.org/atom/ns#">	<Job.getList>		<queryCondition>fullPath = '\\10 As Of ledger posting \(R41542  PSAG0008\)'</queryCondition>		<selectColumns/>		<numRows>1</numRows>	</Job.getList></entry>"""
@@ -376,7 +378,8 @@ class TESREST:
         return (objlist, mes + ':' + newxml)
         
     def getJobbyName(self,name):
-        tname=  name.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=')     
+        tname = self.replaceChars(name)
+        #tname=  name.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=')     
         results = self.getTESList("Job",f"job.name = '{tname}'",None,logging)    
         if len(results[0]) == 1:
             jobid = results[0][0]['id']
@@ -387,6 +390,19 @@ class TESREST:
             newjob['name'] = name
             newjob['parentname'] = ''
         return jobid, newjob
+
+    def getJobbyId(self,id):
+        results = self.getTESList("Job",f"job.id = '{id}'",None,logging)    
+        if len(results[0]) == 1:
+            jobid = results[0][0]['id']
+            newjob = results[0][0]
+        else:
+            jobid = None
+            newjob = xml2obj.xml2obj(TESObjects.Job,'job')
+            newjob['name'] = id
+            newjob['parentname'] = ''
+        return jobid, newjob
+
     def getJobbyAlias(self,alias):
         results = self.getTESList("Job",f"job.alias = '{alias}'",None,logging)    
         if len(results[0]) == 1:
@@ -411,6 +427,7 @@ class TESREST:
         #return name.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=').replace("'","\\'").replace("<","\\<").replace(">","\\>")
 
     def getJob(self,name,parent, cached=True):
+        print(name,parent)
         '''
         r'*?(),\'!=<>'
         '''        
