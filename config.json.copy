@@ -1,0 +1,15 @@
+{
+    "DEBUG": false,
+    "COLUMNS" : "id,command,parameters,workingdirectory,fullpath,environmentfile,alias,name,parentname",
+    "JOBGROUP_SELECT-save" : "\\Copy of 19:30 Corporate Cleanup",
+    "JOBGROUP_SELECT" : "\\JDE 9.0\\Australia Grains\\Copy of 07:15 Australia Grains",
+    "UPDATE" : true,
+    "SC_COMMANDS" : "<JDE_Solution_Connector.3>",
+    "TIDAL_CM" :  "http://192.168.1.53:8080/api/tes-6.5",
+    "CM_USER" : "kooi\\dkooi",
+    "CM_PASSWORD" :  "WNT{",
+    "RUNTIMEUSER_DEFAULT_DOMAIN": "CHSINC",
+    "ENVFILE_MAPPING": "CONVERTCSV.JSON",
+    "NEWJOB_EXTENSION": "_A"
+
+}
