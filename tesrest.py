@@ -427,7 +427,6 @@ class TESREST:
         #return name.replace('(','\\(').replace(')','\\)').replace(',','\\,').replace('=','\\=').replace("'","\\'").replace("<","\\<").replace(">","\\>")
 
     def getJob(self,name,parent, cached=True):
-        print(name,parent)
         '''
         r'*?(),\'!=<>'
         '''        

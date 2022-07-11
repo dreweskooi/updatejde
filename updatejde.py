@@ -61,7 +61,7 @@ def add_job_deps_events(jobid, new_jobid, fullpath):
         print('more than 1')
     if len(rjobdep[0]) > 0:
         for rowjobdep in rjobdep[0]:
-            _jobid, _jobdata = tesconn.getJob(f"{rowjobdep['depjobname']}_a", rowjobdep['depjobparent'])
+            _jobid, _jobdata = tesconn.getJob(f"{rowjobdep['depjobname']}{cfg.NEWJOB_EXTENSION}", rowjobdep['depjobparent'])
             if _jobid != None:
                 rowjobdep['depjobid'] = _jobid
             rowjobdep['jobid'] = new_jobid
@@ -120,7 +120,7 @@ def add_jdejob(name,parentname,fullpath,newjob, extendedinfo, ube,version, rtu_i
     job_id = newjob['id']
     envfile = newjob['environmentfile']
     newjob['id']='0'
-    jobid_adapt , jobdata_adapt = tesconn.getJob(name=f'{name}_a', parent=parentname)
+    jobid_adapt , jobdata_adapt = tesconn.getJob(name=f'{name}{cfg.NEWJOB_EXTENSION}', parent=parentname)
     if jobid_adapt != None:
         newjob['id'] = jobid_adapt
     newjob['type'] = '8'
@@ -135,7 +135,7 @@ def add_jdejob(name,parentname,fullpath,newjob, extendedinfo, ube,version, rtu_i
 <tes:servicename>JDEdwards</tes:servicename>
 
     '''
-    if not newjob['name'].endswith('_a'): newjob['name'] = newjob['name'] + "_a"
+    if not newjob['name'].endswith(cfg.NEWJOB_EXTENSION): newjob['name'] = newjob['name'] + cfg.NEWJOB_EXTENSION
     newjob['agenttype'] = '11'
     newjob['agentostype'] = '12'
     newjob['agentserviceid'] = jde_servicemst_id
@@ -158,15 +158,15 @@ def add_jdejob(name,parentname,fullpath,newjob, extendedinfo, ube,version, rtu_i
         logging.error('1', newjob.name, newjob.parent)
         logging.error(result.message)
     else:
-        jobid_adapt , jobdata_adapt = tesconn.getJob(name=f'{name}_a',parent=parentname)
+        jobid_adapt , jobdata_adapt = tesconn.getJob(name=f'{name}{cfg.NEWJOB_EXTENSION}',parent=parentname)
         cnt = 0
         while jobid_adapt == None and cnt < 10:
             time.sleep(0.5)
             cnt +=1
-            jobid_adapt , jobdata_adapt = tesconn.getJob(name=f'{name}_a',parent=parentname)
+            jobid_adapt , jobdata_adapt = tesconn.getJob(name=f'{name}{cfg.NEWJOB_EXTENSION}',parent=parentname)
         t.stop()
         if jobid_adapt == None:
-            logging.info(f"Add new job, stopped after 10 tries f'{fullpath}_a'")
+            logging.info(f"Add new job, stopped after 10 tries f'{fullpath}{cfg.NEWJOB_EXTENSION}'")
             sys.exit(99)
         else:
             return (job_id, jobid_adapt,jobdata_adapt.fullpath)
@@ -235,7 +235,7 @@ def add_jde_jobs():
             jobid, jobdata = tesconn.getJob(f"{j.name}",j.parentname)
             if jobid == None:
                 print("Issue, job should have been found!")
-            jobid_adapt, jobdata_adapt = tesconn.getJob(f"{j.name}_a",j.parentname)
+            jobid_adapt, jobdata_adapt = tesconn.getJob(f"{j.name}{cfg.NEWJOB_EXTENSION}",j.parentname)
             if jobid_adapt == None:
                 Print(f"Will add adapter job : {j.fullpath}")
                 
@@ -283,217 +283,6 @@ def add_jde_jobs():
     for e in missing_server:
         Print(e)            
     sys.exit(0) 
-    '''
-    if not cfg.UPDATEJOBS_XLSX_PREVIEW and jobdata['type'] == '8':
-        if serviceName == 'Informatica':
-            iics_jobid, iicsjobdata = tesconn.getJob(f"{jobdata['name']}_iics", jobdata['parentname'])
-            if iics_jobid == None:
-                jobdata['name'] = f"{jobdata['name']}_iics"
-                jobdata['type'] = '2'
-                if new_command == '':
-                    logging.error(f"Error, new job command empty, job :{fullPath}")
-                    #jobdata['command'] = 'hostname'
-                else:
-                    jobdata['command'] = new_command
-                jobdata['parameters'] = new_parameters
-                agentlistid = tesconn.getObjectidByName('AgentList',new_agentlistname)
-                jobdata['agentlistid'] = agentlistid
-                jobdata['agentid'] = '0'
-                jobdata['agenttype'] = '6'
-                jobdata['inheritagent'] = 'N'
-                jobdata._attrs.pop('id',None)
-                jobdata._attrs.pop('serviceid',None)
-                jobdata._attrs.pop('agentid',None)
-                jobdata._attrs.pop('servicename',None)
-                jobdata._attrs.pop('extendedinfo',None)
-                jobdata['unixprofile'] ='0'
-                jobdata['runuserid'] = runtimeuserid
-                jobdata['usepasswordwinjob'] = 'SC'
-                jobdata['usePasswordWinJob'] = 'SC'
-                jobdata['alias'] = None
-                result = tesconn.updTESObjAction('create','OSJob',tesconn.dict2Xml('OSJob',jobdata),logging)
-                logging.info(result.message)
-                if 'exception' in result.message:
-                    logging.info(f'Will skip processing this row because of error! {fullPath} ')
-                    #sys.exit(99)
-                time.sleep(1)
-                iics_jobid, iicsjobdata = tesconn.getJob(f"{jobdata['name']}", jobdata['parentname'])
-                cnt = 0
-                while iics_jobid == None and cnt < 10:
-                    time.sleep(0.5)
-                    cnt +=1
-                    iics_jobid, iicsjobdata = tesconn.getJob(f"{jobdata['name']}", jobdata['parentname'])
-                if iics_jobid == None:
-                    logging.info(f"Stopped after 10 tries {jobdata['name']},  {jobdata['parentname']}")
-                    continue
-                    s#ys.exit(99)
-                jobid, jobdata = tesconn.getJob('',fullPath,cached=False)
-                rjobdep = tesconn.getTESList(f"JobDependency", f"jobid = {jobid}")
-                if len(rjobdep[0]) > 0:
-                    for rowjobdep in rjobdep[0]:
-                        rowjobdep['jobid'] = iicsjobdata['id']
-                        rowjobdep['id'] = None
-                        result = tesconn.updTESObjAction('create','JobDependency',tesconn.dict2Xml('JobDependency',rowjobdep),logging)                                        
-                        logging.info(f"JobDependency 1 created for job: {jobdata['name']},  {jobdata['parentname']} : {result.message}")
-                rfiledep = tesconn.getTESList(f"FileDependency", f"jobid = {jobid}")
-                if len(rfiledep[0]) > 0:
-                    for rowfiledep in rfiledep[0]:
-                        rowfiledep['jobid'] = iicsjobdata['id']
-                        rowfiledep['id'] = None
-                        result = tesconn.updTESObjAction('create','FileDependency',tesconn.dict2Xml('FileDependency',rowfiledep),logging)                                                                                
-                        logging.info(f'FileDependency created : {result.message}')
-                rvardep = tesconn.getTESList(f"VariableDependency", f"jobid = {jobid}")
-                if len(rvardep[0]) > 0:
-                    for rowvardep in rvardep[0]:
-                        rowvardep['jobid'] = iicsjobdata['id']
-                        rowvardep['id'] = None
-                        rowvardep['variable_id'] = tesconn.getObjectidByName('Variable',rowvardep['variablename'])
-                        rowvardep['variableid'] = tesconn.getObjectidByName('Variable',rowvardep['variablename'])
-                        rowvardep['varownerid'] = getRuntimeuser(rowvardep['varownername'])
-                        rowvardep['operator'] = '1'
-                        result = tesconn.updTESObjAction('create','VariableDependency',tesconn.dict2Xml('VariableDependency',rowvardep),logging)  
-                        logging.info(f'VariableDependency created : {result.message}')
-                rjobdep = tesconn.getTESList(f"JobDependency", f"depjobid = {jobid}")
-                if len(rjobdep[0]) > 0:
-                    for rowjobdep in rjobdep[0]:
-                        rowjobdep['depjobid'] = iicsjobdata['id']
-                        rowjobdep['id'] = None
-                        result = tesconn.updTESObjAction('create','JobDependency',tesconn.dict2Xml('JobDependency',rowjobdep),logging)                                        
-                        logging.info(f"JobDependency 2 created  for job: {jobdata['name']},  {jobdata['parentname']} : {result.message}")
-                rjobevents = tesconn.getTESList(f"EventJobJoin", f"jobid = {jobid}")
-                if len(rjobevents[0]) > 0:
-                    for rowjobevent in rjobevents[0]:
-                        rowjobevent['jobid'] = iicsjobdata['id']
-                        rowjobevent['id'] = None
-                        result = tesconn.updTESObjAction('create','EventJobJoin',tesconn.dict2Xml('EventJobJoin',rowjobevent),logging)                                        
-                        logging.info(f'EventJobJoin created : {result.message}')
-                jobid, jobdata = tesconn.getJob('',fullPath,cached=False)
-                if jobid != None:
-                    if cfg.UPDATEJOB_TO_IICS_DELETE_ORIG:
-                        result = tesconn.updTESObjAction('delete',jobdata.TESObject,tesconn.dict2Xml(jobdata.TESObject,jobdata),logging)
-                        logging.info(f'Delete of {jobdata.name}, result {result.message} ')
-                        time.sleep(1)
-                        iicsjobid, iicsjobdata = tesconn.getJob('',f'{fullPath}_iics')
-                        iicsjobdata['name'] = iicsjobdata['name'].removesuffix('_iics')
-                        result = tesconn.updTESObjAction('update',iicsjobdata.TESObject,tesconn.dict2Xml(iicsjobdata.TESObject,iicsjobdata),logging)
-                        logging.info(f'Update of {iicsjobdata.name} to original name , result {result.message} ')                                        
-                    else:
-                        jobdata['name'] = f"{jobdata.name}_iics_del"
-                        result = tesconn.updTESObjAction('update',jobdata.TESObject,tesconn.dict2Xml(jobdata.TESObject,jobdata),logging)
-                        logging.info(f'Rename to {jobdata.name}, result {result.message} ')
-            else:
-                logging.info(f"IICS job already created : {iicsjobdata['fullpath']} {iicsjobdata['id']}")                                        
-            iicsjobs +=1
-
-
-    if False:
-        runtimeuserid = getRuntimeuser(cfg.IICS_RUNTIME_USER)
-        agentlistid = tesconn.getObjectidByName('AgentList',cfg.IICS_AGENT_LIST)
-        jobs = tesconn.getTESList('Job',f"fullpath like '{cfg.UPDATEJOB_TO_IICS_FILTER}' and type = '8'")[0]
-        for i in range(2, m_row + 1):
-            pwc_wf = sheet.cell(row = i, column = colnames.index('powercenter_workflow_name')).value.strip() if sheet.cell(row = i, column = colnames.index('powercenter_workflow_name')).value != None else ''
-            tidal_command = sheet.cell(row = i, column = colnames.index('tidal commands')).value.strip() if sheet.cell(row = i, column = colnames.index('tidal commands')).value != None else ''
-            for job in jobs:
-                if not job.command.startswith(f"{pwc_wf}@") or job.name.endswith('_del_iics'):
-                    continue
-                jobid, jobdata = tesconn.getJob('',job.fullpath,cached=False)
-                if jobid != None:
-                    iics_jobid, iicsjobdata = tesconn.getJob(f"{jobdata['name']}_iics", jobdata['parentname'])
-                    if iics_jobid == None:
-                        jobdata['name'] = f"{jobdata['name']}_iics"
-                        jobdata['type'] = '2'
-                        jobdata['command'] = cfg.IICS_COMMAND
-                        jobdata['parameters'] = tidal_command
-                        jobdata['agentlistid'] = agentlistid
-                        jobdata['agentid'] = '0'
-                        jobdata['agenttype'] = '6'
-                        jobdata['inheritagent'] = 'N'
-                        jobdata._attrs.pop('id',None)
-                        jobdata._attrs.pop('serviceid',None)
-                        jobdata._attrs.pop('agentid',None)
-                        jobdata._attrs.pop('servicename',None)
-                        jobdata._attrs.pop('extendedinfo',None)
-                        jobdata['unixprofile'] ='0'
-                        jobdata['runuserid'] = runtimeuserid
-                        jobdata['usepasswordwinjob'] = 'SC'
-                        jobdata['usePasswordWinJob'] = 'SC'
-                        jobdata['alias'] = None
-                        result = tesconn.updTESObjAction('create','OSJob',tesconn.dict2Xml('OSJob',jobdata),logging)
-                        logging.info(result.message)
-                        if 'exception' in result.message:
-                            logging.info('Will stop processing because of error!')
-                            sys.exit(99)
-                        time.sleep(1)
-                        iics_jobid, iicsjobdata = tesconn.getJob(f"{jobdata['name']}", jobdata['parentname'])
-                        cnt = 0
-                        while iics_jobid == None and cnt < 10:
-                            time.sleep(0.5)
-                            cnt +=1
-                            iics_jobid, iicsjobdata = tesconn.getJob(f"{jobdata['name']}", jobdata['parentname'])
-                        if iics_jobid == None:
-                            logging.info(f"Stopped after 10 tries {jobdata['name']},  {jobdata['parentname']}")
-                            sys.exit(99)
-                        jobid, jobdata = tesconn.getJob('',job.fullpath)
-                        rjobdep = tesconn.getTESList(f"JobDependency", f"jobid = {jobid}")
-                        if len(rjobdep[0]) > 0:
-                            for rowjobdep in rjobdep[0]:
-                                rowjobdep['jobid'] = iicsjobdata['id']
-                                rowjobdep['id'] = None
-                                result = tesconn.updTESObjAction('create','JobDependency',tesconn.dict2Xml('JobDependency',rowjobdep),logging)                                        
-                                logging.info(f"JobDependency 1 created for job: {jobdata['name']},  {jobdata['parentname']} : {result.message}")
-                        rfiledep = tesconn.getTESList(f"FileDependency", f"jobid = {jobid}")
-                        if len(rfiledep[0]) > 0:
-                            for rowfiledep in rfiledep[0]:
-                                rowfiledep['jobid'] = iicsjobdata['id']
-                                rowfiledep['id'] = None
-                                result = tesconn.updTESObjAction('create','FileDependency',tesconn.dict2Xml('FileDependency',rowfiledep),logging)                                                                                
-                                logging.info(f'FileDependency created : {result.message}')
-                        rvardep = tesconn.getTESList(f"VariableDependency", f"jobid = {jobid}")
-                        if len(rvardep[0]) > 0:
-                            for rowvardep in rvardep[0]:
-                                rowvardep['jobid'] = iicsjobdata['id']
-                                rowvardep['id'] = None
-                                rowvardep['variable_id'] = tesconn.getObjectidByName('Variable',rowvardep['variablename'])
-                                rowvardep['variableid'] = tesconn.getObjectidByName('Variable',rowvardep['variablename'])
-                                rowvardep['varownerid'] = getRuntimeuser(rowvardep['varownername'])
-                                rowvardep['operator'] = '1'
-                                result = tesconn.updTESObjAction('create','VariableDependency',tesconn.dict2Xml('VariableDependency',rowvardep),logging)  
-                                logging.info(f'VariableDependency created : {result.message}')
-                        rjobdep = tesconn.getTESList(f"JobDependency", f"depjobid = {jobid}")
-                        if len(rjobdep[0]) > 0:
-                            for rowjobdep in rjobdep[0]:
-                                rowjobdep['depjobid'] = iicsjobdata['id']
-                                rowjobdep['id'] = None
-                                result = tesconn.updTESObjAction('create','JobDependency',tesconn.dict2Xml('JobDependency',rowjobdep),logging)                                        
-                                logging.info(f"JobDependency 2 created  for job: {jobdata['name']},  {jobdata['parentname']} : {result.message}")
-                        rjobevents = tesconn.getTESList(f"EventJobJoin", f"jobid = {jobid}")
-                        if len(rjobevents[0]) > 0:
-                            for rowjobevent in rjobevents[0]:
-                                rowjobevent['jobid'] = iicsjobdata['id']
-                                rowjobevent['id'] = None
-                                result = tesconn.updTESObjAction('create','EventJobJoin',tesconn.dict2Xml('EventJobJoin',rowjobevent),logging)                                        
-                                logging.info(f'EventJobJoin created : {result.message}')
-                        jobid, jobdata = tesconn.getJob('',job.fullpath)
-                        if jobid != None:
-                            if cfg.UPDATEJOB_TO_IICS_DELETE_ORIG:
-                                result = tesconn.updTESObjAction('delete',jobdata.TESObject,tesconn.dict2Xml(jobdata.TESObject,jobdata),logging)
-                                logging.info(f'Delete of {jobdata.name}, result {result.message} ')
-                                time.sleep(1)
-                                iicsjobid, iicsjobdata = tesconn.getJob('',f'{job.fullpath}_iics')
-                                iicsjobdata['name'] = iicsjobdata['name'].removesuffix('_iics')
-                                result = tesconn.updTESObjAction('update',iicsjobdata.TESObject,tesconn.dict2Xml(iicsjobdata.TESObject,iicsjobdata),logging)
-                                logging.info(f'Update of {iicsjobdata.name} to original name , result {result.message} ')                                        
-                            else:
-                                jobdata['name'] = f"{jobdata.name}_iics_del"
-                                result = tesconn.updTESObjAction('update',jobdata.TESObject,tesconn.dict2Xml(jobdata.TESObject,jobdata),logging)
-                                logging.info(f'Rename to {jobdata.name}, result {result.message} ')
-                    else:
-                        logging.info(f"IICS job already created : {iicsjobdata['fullpath']} {iicsjobdata['id']}")                                        
-                    iicsjobs +=1
-        session.commit()            
-        logging.info(f'Completed Update Jobs based on Excel input, total jobs : {jobcnt} {filename} ')
-    '''                   
-#cfg = config.Config()
 try:
     with open('config.json') as f:
         cfg = tesrest.AttrDict(json.load(f))
