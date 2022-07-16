@@ -1,27 +1,45 @@
-from audioop import add
-from ctypes.wintypes import PINT
-from modulefinder import IMPORT_NAME
-import queue
 import sys
 import time
-
+from collections.abc import Iterable
 import tesrest
 import logging
-logging.info("Start")
-import config 
-import os
-import datetime 
+#logging.info("Start")
 import json
 import base64
 import shlex
 jobcnt = 0
-
-jdexml='''<jobdef><ube>{ube}</ube><version>{version}</version><title>{title}</title><host>{host}</host><printers/><queue>{queue}</queue><printnow/><delete/><nameonly/>
+COLUMNS = "id,command,parameters,workingdirectory,fullpath,environmentfile,alias,name,parentname"
+del_jdexml='''<jobdef><ube>{ube}</ube><version>{version}</version><title>{title}</title><host>{host}</host><printers/><queue>{queue}</queue><printnow/><delete/><nameonly/>
 <pdf>{pdf_y}}</pdf><disabledsoverride/><csv/><jdelog>Y</jdelog><jdedebuglog/><summary>Y</summary><debuglevel>{debuglevel}</debuglevel><pollint>5</pollint><objchck/><osacheckbox>N</osacheckbox>
 <osaclass/><folder><var.compound/></folder><tag><var.compound/></tag><parms><parm><columnposition>1</columnposition><column>Business Unit</column><value><var.compound/></value><ovdop/><andor/></parm></parms><opts/></jobdef>
 '''
 import time
+"""
+Url: https://gist.github.com/wassname/1393c4a57cfcbf03641dbc31886123b8
+"""
+import unicodedata
+import string
 
+valid_filename_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+char_limit = 255
+
+def clean_filename(filename, whitelist=valid_filename_chars, replace=' '):
+    # replace spaces
+    for r in replace:
+        filename = filename.replace(r,'_')
+    
+    # keep only valid ascii chars
+    cleaned_filename = unicodedata.normalize('NFKD', filename).encode('ASCII', 'ignore').decode()
+    
+    # keep only whitelisted chars
+    cleaned_filename = ''.join(c for c in cleaned_filename if c in whitelist)
+    if len(cleaned_filename)>char_limit:
+        print("Warning, filename truncated because it was over {}. Filenames may no longer be unique".format(char_limit))
+    return cleaned_filename[:char_limit]    
+
+# test
+#s='fake_folder/\[]}{}|~`"\':;,/? abcABC 0123 !@#$%^&*()_+ clᐖﯫⅺຶ 讀ϯՋ㉘ ⅮRㇻᎠ⍩ 𝁱C ℿ؛ἂeuឃC ᅕ ᑉﺜͧ bⓝ s⡽Հᛕ\ue063 牢𐐥er ᐛŴ n წş .ھڱ                                 df                                         df                                  dsfsdfgsg!zip'
+#print(clean_filename(s)) # 'fake_folder_abcABC_0123_____clxi_28_DR_C_euC___bn_s_er_W_n_s_.zip'
 class TimerError(Exception):
     """A custom exception used to report errors in use of Timer class"""
 
@@ -43,13 +61,13 @@ class Timer:
 
         elapsed_time = time.perf_counter() - self._start_time
         self._start_time = None
-        print(f"Elapsed time: {elapsed_time:0.4f} seconds")
+        if cfg.DEBUG: Print(f"Elapsed time: {elapsed_time:0.4f} seconds")
 
 def Print(*message):
     msg=''
-    if type(message) == list:
+    if isinstance(message, Iterable):
         for m in message:
-            msg += m
+            msg += m + ' '
     else:
         msg=message
     print(msg)
@@ -58,7 +76,7 @@ def Print(*message):
 def add_job_deps_events(jobid, new_jobid, fullpath):
     rjobdep = tesconn.getTESList(f"JobDependency", f"jobid = {jobid}")
     if len(rjobdep[0]) > 1:
-        print('more than 1')
+        Print('more than 1')
     if len(rjobdep[0]) > 0:
         for rowjobdep in rjobdep[0]:
             _jobid, _jobdata = tesconn.getJob(f"{rowjobdep['depjobname']}{cfg.NEWJOB_EXTENSION}", rowjobdep['depjobparent'])
@@ -90,7 +108,7 @@ def add_job_deps_events(jobid, new_jobid, fullpath):
             rowvardep['operator'] = '1'
             result = tesconn.updTESObjAction('create','VariableDependency',tesconn.dict2Xml('VariableDependency',rowvardep),logging)  
             logging.info(f'VariableDependency created : {result.message}')
-    if False:
+    if True:
         rjobdep = tesconn.getTESList(f"JobDependency", f"depjobid = {jobid}")
         if len(rjobdep[0]) > 1:
             print('more than 1')
@@ -104,10 +122,14 @@ def add_job_deps_events(jobid, new_jobid, fullpath):
                     rowjobdep['depjobid'] = new_jobid
                     rowjobdep['id'] = None
                     rowjobdep['ignoredep'] = 'Y'
-                    result = tesconn.updTESObjAction('create','JobDependency',tesconn.dict2Xml('JobDependency',rowjobdep),logging)                                        
+                    if __jobid =='0' or new_jobid =='0':
+                        pass
+                    else:
+                        result = tesconn.updTESObjAction('create','JobDependency',tesconn.dict2Xml('JobDependency',rowjobdep),logging)                                        
+                        logging.info(f"JobDependency 2 created  for job: {fullpath} : {result.message}")
                 else:
                     result = tesconn.updTESObjAction('delete','JobDependency',tesconn.dict2Xml('JobDependency',rowjobdep),logging)                                        
-                logging.info(f"JobDependency 2 created  for job: {fullpath} : {result.message}")
+                    logging.info(f"JobDependency 2 deleted  for job: {fullpath} : {result.message}")
     rjobevents = tesconn.getTESList(f"EventJobJoin", f"jobid = {jobid}")
     if len(rjobevents[0]) > 0:
         for rowjobevent in rjobevents[0]:
@@ -141,7 +163,9 @@ def add_jdejob(name,parentname,fullpath,newjob, extendedinfo, ube,version, rtu_i
     newjob['agentserviceid'] = jde_servicemst_id
     newjob['servicename'] = 'JDEdwards'
     newjob['jobmst_mode'] = '0'
-    newjob['command'] = f"{ube}.{version}"
+    newjob['command'] = f"{ube}:{version}"
+    newjob._attrs.pop('parameters',None)
+    newjob._attrs.pop('environmentfile',None)
     newjob['serviceid'] = jde_servicemst_id
     newjob['extendedinfo'] = extendedinfo
     newjob['id'] ='0'
@@ -152,6 +176,7 @@ def add_jdejob(name,parentname,fullpath,newjob, extendedinfo, ube,version, rtu_i
     newjob['active'] = 'N'
     t = Timer()
     t.start()
+    #print(extendedinfo)
     result = tesconn.updTESObjAction("create" if newjob['id']== '0' else "update","ServiceJob",tesconn.dict2Xml('Job',newjob),logging)
     if cfg.DEBUG: logging.info(jobcnt, result.message)
     if 'exception' in result.message:
@@ -187,7 +212,8 @@ def add_jde_jobs():
     missing_server = set()
     missing_rtu = set()
     added_jobs = set()
-    jobrows, res = tesconn.getTESList(f"Job", f"type = 2 and fullpath like '{tesconn.replaceChars(cfg.JOBGROUP_SELECT)}\\\\*'",columns=f"{cfg.COLUMNS}")     
+    skipped_jobs = set()
+    jobrows, res = tesconn.getTESList(f"Job", f"type = 2 and fullpath like '{tesconn.replaceChars(cfg.JOBGROUP_SELECT)}\\\\*'",columns=f"{COLUMNS}")     
     for j in jobrows:
         if j.command in cfg.SC_COMMANDS:
             #envfiles.add(j.environmentfile)
@@ -198,7 +224,7 @@ def add_jde_jobs():
             pdf_y = 'Y'
             debuglevel='0'
             host=''
-
+            skip = False
             parts = shlex.split(j.parameters)
             for x, y in enumerate(parts):
                 if parts[x] == '-r':
@@ -214,15 +240,18 @@ def add_jde_jobs():
                 else:
 
                     if parts[x].startswith('-'):
-                        Print('Job : ', j.fullpath, ' ,Unknow option ', parts[x])
-            
+                        Print('ERROR Job : ', j.fullpath, ' ,Unknown option, job will be skipped ', parts[x])
+                        skipped_jobs.add(j.fullpath)
+                        skip=True
+                        continue
 
             jdexml2=f'''
                       <jobdef><ube>{ube}</ube><version>{version}</version><title>{title}</title><host>{host}</host><printers/><queue>{queue}</queue><printnow/><delete/><nameonly/>
 <pdf>Y</pdf><disabledsoverride/><csv/><jdelog/><jdedebuglog/><summary>Y</summary><debuglevel>0</debuglevel><pollint>5</pollint><objchck/><osacheckbox>N</osacheckbox><osaclass/>
 <folder><var.compound/></folder><tag><var.compound/></tag></jobdef>
 '''
-
+            if skip:
+                continue
             # Now get envfile mapping data and validate that:
             j.environmentfile= j.environmentfile.replace(' ','')
             if j.environmentfile in envfile_mapping:
@@ -230,14 +259,18 @@ def add_jde_jobs():
             else:
                 if not j.environmentfile in missing_envfiles:
                     missing_envfiles.add(j.environmentfile)
-                    Print(f"Job: {j.fullpath} ,Environment file not found in mapping: {j.environmentfile}")
+                Print(f"ERROR Job: {j.fullpath} ,Environment file not found in mapping {cfg.ENVFILE_MAPPING}: {j.environmentfile}")
+                skipped_jobs.add(j.fullpath)
                 continue
             jobid, jobdata = tesconn.getJob(f"{j.name}",j.parentname)
             if jobid == None:
-                print("Issue, job should have been found!")
+                Print("Issue, job should have been found!")
             jobid_adapt, jobdata_adapt = tesconn.getJob(f"{j.name}{cfg.NEWJOB_EXTENSION}",j.parentname)
             if jobid_adapt == None:
-                Print(f"Will add adapter job : {j.fullpath}")
+                if cfg.UPDATE:
+                    Print(f"Will add adapter job : {j.fullpath}")
+                else:
+                    Print(f"Would add adapter job : {j.fullpath}")
                 
                 if not '\\' in envfile_mapping[j.environmentfile]['user']:
                     rtu_id = tesconn.getRuntimeUser(cfg.RUNTIMEUSER_DEFAULT_DOMAIN + '\\' +  envfile_mapping[j.environmentfile]['user'])    
@@ -249,9 +282,9 @@ def add_jde_jobs():
                     missing_rtu.add(envfile_mapping[j.environmentfile]['user'])
                     continue
                 queue = envfile_mapping[j.environmentfile]['queue']
-                #server = envfile_mapping[j.environmentfile]['server']
                 host=''
-                title=''
+                host = envfile_mapping[j.environmentfile]['server']
+                title='Default Title'
                 #agent_id = tesconn.getAgentid(envfile_mapping[j.environmentfile]['server'])
                 agent_id = tesconn.getAgentidByMachine(envfile_mapping[j.environmentfile]['server'],'JDEDWARDS')
                 if agent_id == -1: 
@@ -260,9 +293,10 @@ def add_jde_jobs():
                     continue
                 if cfg.UPDATE:
                     jdexml=f'''<jobdef><ube>{ube}</ube><version>{version}</version><title>{title}</title><host>{host}</host><printers/><queue>{queue}</queue><printnow/><delete/><nameonly/>
-        <pdf>{pdf_y}</pdf><disabledsoverride/><csv/><jdelog>Y</jdelog><jdedebuglog/><summary>Y</summary><debuglevel>{debuglevel}</debuglevel><pollint>5</pollint><objchck/><osacheckbox>N</osacheckbox>
-        <osaclass/><folder><var.compound/></folder><tag><var.compound/></tag><opts/></jobdef>
+        <pdf>{pdf_y}</pdf><disabledsoverride/><csv/><jdelog>Y</jdelog><jdedebuglog/><summary>Y</summary><debuglevel>{debuglevel}</debuglevel><pollint>5</pollint><objchck/><osacheckbox/>
+        <osaclass/><folder><var.compound/></folder><tag><var.compound/></tag><parms/><opts><var.compound/></opts></jobdef>
         '''
+                    #print(jdexml)
                     added_jobs.add(add_jdejob(j.name,j.parentname,j.fullpath,jobdata, jdexml,ube=ube,version=version, rtu_id=rtu_id, agent_id=agent_id, jde_servicemst_id=jde_servicemst_id))
             else:
                 cnt_jde_already_exist +=1
@@ -271,40 +305,65 @@ def add_jde_jobs():
             jbackup = tesconn.dict2Xml('Job',jobdata)
 
     for addedjob in added_jobs:
-        add_job_deps_events(*addedjob)            
-    Print(f"JDE jobs already exist : {cnt_jde_already_exist}")
-    Print("List of missing envfiles")
-    for e in missing_envfiles:
-        Print(e)            
-    Print("List of missing runtime users")
-    for e in missing_rtu:
-        Print(e)            
-    Print("List of missing agents")
-    for e in missing_server:
-        Print(e)            
-    sys.exit(0) 
-try:
-    with open('config.json') as f:
-        cfg = tesrest.AttrDict(json.load(f))
-except Exception as ex:
-    Print("Error in getting CONFIGURATION, check config.json. Exiting")
-    sys.exit(11) 
-try:
-    with open(cfg.ENVFILE_MAPPING.strip()) as f:
-        envfile_mapping = tesrest.AttrDict(json.load(f))
-except Exception as ex:
-    Print(f"Error in getting envfile_mapping, check config.json, missing mapping file : {cfg.ENVFILE_MAPPING.strip()}. Exiting")
-    sys.exit(11)  
-Print(f"Connecting to {cfg.TIDAL_CM}")
-tesconn = tesrest.TESREST(cfg.TIDAL_CM, cfg.CM_USER,base64.b85decode(cfg.CM_PASSWORD).decode('utf-8'))  
-logfile = 'UPDATEJDE_SC.log'
-if os.path.exists(logfile):
-    os.remove(logfile)
-#job_data, jobid = tesconn.getJob('01 Reprice Bulk (SA,TS) at 545 (R42950 PSRF0008)', '\\JDE 9.0\\Refined Fuels\\06:00-19:00 Manual Bulk Processing')    
-#jde_jobdata2, jde_jobid = tesconn.getTESList("Job","fullPath='\\\\10 As Of ledger posting \(R41542  PSAG0008\)'")
-handler = logging.basicConfig(filename=logfile, force=True, encoding='utf-8', level=logging.DEBUG if cfg.DEBUG else logging.INFO )
-if cfg.UPDATE:
-    Print("Update mode")
-else:
-    Print("Non update mode")
-add_jde_jobs()
+        add_job_deps_events(*addedjob)    
+    rc = 0                
+    Print(f"JDE jobs that already existed : {cnt_jde_already_exist}")
+    if missing_envfiles:
+        rc=1
+        Print("List of missing envfiles")
+        for e in missing_envfiles:
+            Print("\tERROR",e)            
+    if missing_rtu:
+        rc=2
+        Print("List of missing runtime users")
+        for e in missing_rtu:
+            Print("\tERROR",e)  
+    if missing_server:          
+        rc=3
+        Print("List of missing agents")
+        for e in missing_server:
+            Print("\tERROR",e)   
+    if skipped_jobs:         
+        rc=4
+        Print("List of skipped jobs because of invalid options ")
+        for e in skipped_jobs:
+            Print(f"\tERROR",e)            
+    return rc
+
+if __name__ == '__main__':     
+    try:
+        with open('config.json') as f:
+            cfg = tesrest.AttrDict(json.load(f))
+    except Exception as ex:
+        Print("Error in getting CONFIGURATION, check config.json. Exiting")
+        sys.exit(11) 
+    try:
+        with open(cfg.ENVFILE_MAPPING.strip()) as f:
+            envfile_mapping = tesrest.AttrDict(json.load(f))
+    except Exception as ex:
+        Print(f"Error in getting envfile_mapping, check config.json, missing mapping file : {cfg.ENVFILE_MAPPING.strip()}. Exiting")
+        sys.exit(11)  
+    Print(f"Connecting to {cfg.TIDAL_CM}")
+    tesconn = tesrest.TESREST(cfg.TIDAL_CM, cfg.CM_USER,base64.b85decode(cfg.CM_PASSWORD).decode('utf-8'))  
+    logfile = f'UPDATEJDE_SC_{clean_filename(cfg.JOBGROUP_SELECT)}.log'
+    print("Will use logfile\n\t",logfile)
+    #if os.path.exists(logfile):
+    #    os.remove(logfile)
+    #job_data, jobid = tesconn.getJob('01 Reprice Bulk (SA,TS) at 545 (R42950 PSRF0008)', '\\JDE 9.0\\Refined Fuels\\06:00-19:00 Manual Bulk Processing')    
+    #jde_jobdata2, jde_jobid = tesconn.getTESList("Job","fullPath='\\\\10 As Of ledger posting \(R41542  PSAG0008\)'")
+    handler = logging.basicConfig(filename=logfile, force=True, encoding='utf-8', level=logging.DEBUG if cfg.DEBUG else logging.INFO )
+    if cfg.UPDATE:
+        Print("Update mode")
+        cfg.UPDATE = False
+        rc = add_jde_jobs()
+        Print(f"Completed non-update processing, rc={rc}")
+        if rc == 0 or  ("UPDATE_ON_ISSUES" in cfg and cfg.UPDATE_ON_ISSUES):
+            cfg.UPDATE = True
+            rc = add_jde_jobs()
+            Print(f"Completed update processing, rc={rc}")
+        else:
+            Print(f"Stopped update processing because of issues found, rc={rc}")
+    else:
+        Print("Non update mode")
+        rc= add_jde_jobs()
+        Print(f"Completed non-update processing, rc={rc}")

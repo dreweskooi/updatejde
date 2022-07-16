@@ -4,7 +4,20 @@ import json
 import sys
 import base64
 import re
-valid_options = ['delete' , 'jdejob_enable', 'jdejob_disable','scjob_delete']
+"""This script will update jde jobs create by jde sc conversion to enable or disable and delete sc jobs
+
+    Parameters: 
+    argument1 (string): functions:
+                        delete : will delete all jde adapter jobs that macth selection criteria and end with cfg.NEWJOB_EXTENSION (_A)
+                        jde_enable: will disable sc job and enable corresponding adapter job
+                        jde_disable: will disable jde apterjob and enable sc job
+                        scjob_delete: will delete sc job
+
+    Returns:
+    exit code 
+
+   """
+valid_options = ['delete' , 'jdejob_enable', 'jdejob_disable','scjob_delete', 'check_added_jde_job_deps']
 if len(sys.argv) != 2 or len(sys.argv) ==2 and not sys.argv[1] in valid_options :
     print(f"Valid option required : {valid_options}  !") 
     sys.exit(1)
@@ -12,11 +25,13 @@ try:
     with open('config.json') as f:
         cfg = tesrest.AttrDict(json.load(f))
 except Exception as ex:
+    print("Error opening config.json : ",ex)
     sys.exit(11)  
 try:
     with open(cfg.ENVFILE_MAPPING.strip()) as f:
         envfile_mapping = tesrest.AttrDict(json.load(f))
 except Exception as ex:
+    print("Error opening envfile_maping file : ",ex)
     sys.exit(11)  
 print(f"{sys.argv[1]} option selected")
 tesconn = tesrest.TESREST(cfg.TIDAL_CM, cfg.CM_USER,base64.b85decode(cfg.CM_PASSWORD).decode('utf-8')) 
@@ -59,6 +74,19 @@ if sys.argv[1] == 'scjob_delete':
         if job_id != None:
             result = tesconn.updTESObjAction('delete','OSJob',tesconn.dict2Xml('OSJob',jobdata),None)
             print(jobdata.fullpath, result.message)
+if sys.argv[1] == 'check_added_jde_job_deps':
+    rjobdep = tesconn.getTESList(f"JobDependency","id>0")
+    rjobdep[0].sort(key=lambda x: (x.jobid, x.depjobparent,x.depjobname))
+    print("Check following jobs for dependency issues")
+    for r in rjobdep[0]:
+        if r.depjobname.endswith(cfg.NEWJOB_EXTENSION) and r.depjobtype == '8':
+            #_t = re.sub( tesconn.replaceChars(cfg.NEWJOB_EXTENSION) + '$', '', r.depjobname)
+            # filter where jobid are the ame , dep parent same, ad depjobname = 
+            deps = filter(lambda x: x.jobid == r.jobid and  x.depjobparent== r.depjobparent and  x.depjobname ==  re.sub( tesconn.replaceChars(cfg.NEWJOB_EXTENSION) + '$', '', r.depjobname),   rjobdep[0])
+            for d in deps:
+                print(d.jobid, d.jobname, d.depjobname, d.depjobparent)
+
+        #print(r)
 
 #id, jobdata =tesconn.getJob(name='', parent = '\\Copy of JDE 9.0\\Australia Grains')
 #id, jobdata =tesconn.getJob(name='08:00-20:00 Gen Withhold Certs (R5504A09 PDAR0001)', parent = '\\Copy of JDE 9.0\\Australia Grains')

@@ -172,7 +172,7 @@ class TESREST:
             self.password = password
         else:
             self.password = base64.b85decode(password).decode('utf-8')
-            print(self.password)
+            #print(self.password)
         self.auth = HTTPBasicAuth(self.user, self.password)
         self.s = requests.Session()
         self.req = requests.Request('GET', self.url, auth=self.auth)
@@ -255,9 +255,10 @@ class TESREST:
 
 
     def getTESList(self,objectname, criteria, columns=None, logger=None):
+        #print(criteria)
         if self.req is None:
             raise Exception('Not </tes:  + keto TES')
-        from http.client import HTTPConnection  # py3
+        #from http.client import HTTPConnection  # py3
         #print(criteria)
         #HTTPConnection.debuglevel = 2 
         #           

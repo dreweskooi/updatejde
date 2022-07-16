@@ -1,0 +1,212 @@
+{
+   "<PD902_CHIJDEENT1_ABUSER_QBATCH.303>": {
+      "user": "ABUSERTST",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_ABUSER_QFIN_ENV.301>": {
+      "user": "ABUSERTST",
+      "queue": "QFIN",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_APUSER_QFIN_ENV.304>": {
+      "user": "APUSERTST",
+      "queue": "QFIN",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_ARGENTINA_ENV.401>": {
+      "user": "ARUSERTST",
+      "queue": "QFIN",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_ARUSER_ENV.305>": {
+      "user": "ARUSER",
+      "queue": "QFIN",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_ARUSER_QBATCH.306>": {
+      "user": "ARUSERTST",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_BRAZIL_ENV.307>": {
+      "user": "SCHD633TST",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_BULKUSER_ENV.485>": {
+      "user": "RFBLKUSERT",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_EDIUSER_QEDI.308>": {
+      "user": "EDIUSERTST",
+      "queue": "QEDI",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_ENV.302>": {
+      "user": "SCHDMASTST",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_GLUSER_ENV.309>": {
+      "user": "GLUSERTST",
+      "queue": "QFIN",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_GLUSER_QBATCH.310>": {
+      "user": "GLUSERTST",
+      "queue": "QFIN",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_INT_QBATCH.312>": {
+      "user": "INTEGUSTST",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_INTEGUSER_ENV.311>": {
+      "user": "INTEGUSTST",
+      "queue": "QTRANS",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_QTRANS_ENV.313>": {
+      "user": "SCHDMASTST",
+      "queue": "QTRANS",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_SOUSER_ENV.314>": {
+      "user": "SOUSERTST",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_CHIJDEENT1_TRADEUSER_QSCHED_ENV.447>": {
+      "user": "TRADEUSTST",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_IL900A1A0B_ABUSER_QBATCH.324>": {
+      "user": "ABUSERTST",
+      "queue": "QSCHED",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_APUSER_ENV.316>": {
+      "user": "APUSERTST",
+      "queue": "QFIN",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_APUSR_QSCHED.459>": {
+      "user": "APUSERTST",
+      "queue": "QSCHED",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_ARGENTINA_ENV.425>": {
+      "user": "SCHDMASTST",
+      "queue": "QSCHED",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_ARUSER_ENV.451>": {
+      "user": "ARUSERTST",
+      "queue": "QFIN",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_ARUSER_QBATCH.452>": {
+      "user": "ARUSERTST",
+      "queue": "QSCHED",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_BRAZIL_ENV.326>": {
+      "user": "SCHD633TST",
+      "queue": "QSCHED",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_BULKUSER_ENV.486>": {
+      "user": "RFBLKUSERT",
+      "queue": "QSCHED",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_EDIUSER_QEDI.317>": {
+      "user": "EDIUSERTST",
+      "queue": "QEDI",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_ENV.318>": {
+      "user": "SCHDMASTST",
+      "queue": "QSCHED",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_GLUSER_ENV.319>": {
+      "user": "GLUSERTST",
+      "queue": "QFIN",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_INT_QBATCH.325>": {
+      "user": "INTEGUSTST",
+      "queue": "QSCHED",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_QINTL_ENV.595>": {
+      "user": "SCHDMASTST",
+      "queue": "QINTL",
+      "server": "MN501AJB105"
+   },
+   "<PD902_IL900A1A0B_QTRANS_ENV.320>": {
+      "user": "SCHDMASTST",
+      "queue": "QTRANS",
+      "server": "MN501AJB105"
+   },
+   "<PD902_JDECVD01_ENV.524>": {
+      "user": "SCHDMASTST",
+      "queue": "",
+      "server": "JDECVD01"
+   },
+   "<PD902_JDECVD01_ENV 037.581>": {
+      "user": "SCHDMASTST",
+      "queue": "QSCHED",
+      "server": "JDECVD01"
+   },
+   "<PD902_JDECVDA1_ENV.522>": {
+      "user": "SCHDMASTST",
+      "queue": "QSCHED",
+      "server": "JDECVDA1"
+   },
+   "<PD902_JDEPY01_BRAZIL_QSCHEDB_ENV.569>": {
+      "user": "SCHD633TST",
+      "queue": "QSCHEDB",
+      "server": "jdepyd01"
+   },
+   "<PD902_JDEPYD01_APUSER_QSCHED_ENV.571>": {
+      "user": "APUSERTST",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_JDEPYD01_ENV_QSCHED.582>": {
+      "user": "SCHDMASTST",
+      "queue": "QSCHED",
+      "server": "jdepyd01"
+   },
+   "<PD902_MN501AJB105_ENV.525>": {
+      "user": "SCHDMASTST",
+      "queue": "QSCHED",
+      "server": "MN501AJB105"
+   },
+   "<PD902_MN501AJB105_ENV x86.584>": {
+      "user": "SCHDMASTST",
+      "queue": "QBATCH",
+      "server": "MN501AJB105"
+   },
+   "<JDEPDY_Connection1_ENV.563>": {
+      "user": "SCHDMASTST",
+      "queue": "QBATCH",
+      "server": "JDEPYD01"
+   },
+   "<PD902_MN001A1B0A_ENV.321>": {
+      "user": "SCHDMASTST",
+      "queue": "QBATCH",
+      "server": "MN501AJB105"
+   },
+   "<PD900_JDEPDD01_ENV.242>": {
+      "user": "SCHDMASTST",
+      "queue": "qsched",
+      "server": "JDEPYD01"
+   }
+}
