@@ -73,13 +73,15 @@ def Print(*message):
     print(msg)
     logging.info(msg)
 
-def add_job_deps_events(jobid, new_jobid, fullpath):
+def add_job_deps_events(jobid, new_jobid, fullpath, skipped_jobs):
     rjobdep = tesconn.getTESList(f"JobDependency", f"jobid = {jobid}")
     if len(rjobdep[0]) > 1:
         Print('more than 1')
     if len(rjobdep[0]) > 0:
         for rowjobdep in rjobdep[0]:
             _jobid, _jobdata = tesconn.getJob(f"{rowjobdep['depjobname']}{cfg.NEWJOB_EXTENSION}", rowjobdep['depjobparent'])
+            if rowjobdep['depjobparent'] + '\\' + rowjobdep['depjobname'] in skipped_jobs:
+                continue
             if _jobid != None:
                 rowjobdep['depjobid'] = _jobid
             rowjobdep['jobid'] = new_jobid
@@ -110,12 +112,15 @@ def add_job_deps_events(jobid, new_jobid, fullpath):
             logging.info(f'VariableDependency created : {result.message}')
     if True:
         rjobdep = tesconn.getTESList(f"JobDependency", f"depjobid = {jobid}")
+
         if len(rjobdep[0]) > 1:
             print('more than 1')
 
         if len(rjobdep[0]) > 0:
             for rowjobdep in rjobdep[0]:
                 __jobid, __jobdata = tesconn.getJobbyId(rowjobdep['jobid'])
+                if __jobdata['parentname'] + '\\' + rowjobdep['jobname'] in skipped_jobs:
+                    continue
                 __jobid, __jobdata = tesconn.getJob(f"{__jobdata['name']}", rowjobdep['depjobparent'])
                 if __jobid != None:
                     rowjobdep['jobid'] = __jobid
@@ -208,6 +213,7 @@ def add_jde_jobs():
     jde_servicemst_id = servicemast[0][0]['id']
 
     cnt_jde_already_exist =0
+    cnt_jde_new =0
     missing_envfiles = set()
     missing_server = set()
     missing_rtu = set()
@@ -237,6 +243,10 @@ def add_jde_jobs():
                     queue = parts[x+1]
                 elif parts[x] == '-g':
                     debuglevel = parts[x+1]
+                elif parts[x].startswith('-r') and len(parts[x])> 2:
+                    ube = parts[x][2:]
+                elif parts[x].startswith('-v'):
+                    version = parts[x][2:]
                 else:
 
                     if parts[x].startswith('-'):
@@ -284,13 +294,14 @@ def add_jde_jobs():
                 queue = envfile_mapping[j.environmentfile]['queue']
                 host=''
                 host = envfile_mapping[j.environmentfile]['server']
-                title='Default Title'
+                title='Title'
                 #agent_id = tesconn.getAgentid(envfile_mapping[j.environmentfile]['server'])
                 agent_id = tesconn.getAgentidByMachine(envfile_mapping[j.environmentfile]['server'],'JDEDWARDS')
                 if agent_id == -1: 
                     missing_server.add(envfile_mapping[j.environmentfile]['server'])
                     Print(f"Missing server: {envfile_mapping[j.environmentfile]['server']}")
                     continue
+                cnt_jde_new +=1
                 if cfg.UPDATE:
                     jdexml=f'''<jobdef><ube>{ube}</ube><version>{version}</version><title>{title}</title><host>{host}</host><printers/><queue>{queue}</queue><printnow/><delete/><nameonly/>
         <pdf>{pdf_y}</pdf><disabledsoverride/><csv/><jdelog>Y</jdelog><jdedebuglog/><summary>Y</summary><debuglevel>{debuglevel}</debuglevel><pollint>5</pollint><objchck/><osacheckbox/>
@@ -305,8 +316,9 @@ def add_jde_jobs():
             jbackup = tesconn.dict2Xml('Job',jobdata)
 
     for addedjob in added_jobs:
-        add_job_deps_events(*addedjob)    
+        add_job_deps_events(*addedjob, skipped_jobs=skipped_jobs)    
     rc = 0                
+    Print(f"JDE jobs new : {cnt_jde_new}")
     Print(f"JDE jobs that already existed : {cnt_jde_already_exist}")
     if missing_envfiles:
         rc=1
@@ -354,9 +366,10 @@ if __name__ == '__main__':
     handler = logging.basicConfig(filename=logfile, force=True, encoding='utf-8', level=logging.DEBUG if cfg.DEBUG else logging.INFO )
     if cfg.UPDATE:
         Print("Update mode")
+        Print("Will first run non-update validation")
         cfg.UPDATE = False
         rc = add_jde_jobs()
-        Print(f"Completed non-update processing, rc={rc}")
+        Print(f"Completed non-update validation processing, rc={rc}")
         if rc == 0 or  ("UPDATE_ON_ISSUES" in cfg and cfg.UPDATE_ON_ISSUES):
             cfg.UPDATE = True
             rc = add_jde_jobs()

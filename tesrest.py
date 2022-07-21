@@ -30,11 +30,7 @@ xmlpost = """\
 <?xml version="1.0" encoding="UTF-8" ?>\
 <entry xmlns="http://purl.org/atom/ns#">
 	<object.function>
-		<queryCondition>
-        <![CDATA[
-#queryCondition
-]]>
-</queryCondition>
+		<queryCondition><![CDATA[#queryCondition]]></queryCondition>
 		<selectColumns>#selectColumns</selectColumns>
         <numRows>0</numRows>
 	</object.function>
@@ -44,7 +40,7 @@ xmlpostsorted = """\
 <?xml version="1.0" encoding="UTF-8" ?>\
 <entry xmlns="http://purl.org/atom/ns#">
 	<object.function>
-		<queryCondition>#queryCondition</queryCondition>
+		<queryCondition><![CDATA[#queryCondition]]></queryCondition>
 		<selectColumns>#selectColumns</selectColumns>
         <orderBy>#orderBy</orderBy>
 	</object.function>
